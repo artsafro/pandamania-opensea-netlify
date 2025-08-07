@@ -1,6 +1,6 @@
 /**
  * GET /.netlify/functions/opensea?slug=<collection-slug>
- * Needs env: OPENSEA_API_KEY
+ * Env: OPENSEA_API_KEY
  */
 const HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -16,54 +16,62 @@ exports.handler = async (event) => {
 
   try {
     const slug = event.queryStringParameters?.slug || "";
-    if (!slug) {
-      return { statusCode: 400, headers: HEADERS, body: JSON.stringify({ error: "Missing collection slug" }) };
-    }
+    if (!slug) return { statusCode: 400, headers: HEADERS, body: JSON.stringify({ error: "Missing collection slug" }) };
 
-    const apiKey = process.env.OPENSEA_API_KEY;
-    if (!apiKey) {
-      return { statusCode: 500, headers: HEADERS, body: JSON.stringify({ error: "Missing OPENSEA_API_KEY env var" }) };
-    }
+    const key = process.env.OPENSEA_API_KEY;
+    if (!key) return { statusCode: 500, headers: HEADERS, body: JSON.stringify({ error: "Missing OPENSEA_API_KEY env var" }) };
 
-    // 1) v2 collection (metadata)
-    const v2Url = `https://api.opensea.io/api/v2/collections/${encodeURIComponent(slug)}`;
-    const v2Resp = await fetch(v2Url, { headers: { "X-API-KEY": apiKey } });
-    const v2Ok = v2Resp.ok;
-    const v2 = v2Ok ? await v2Resp.json() : {};
+    const h = { "X-API-KEY": key };
 
-    // 2) v1 stats (fallback for floor/owners/supply)
-    //    v1 returns: { stats: { floor_price, num_owners, total_supply, ... } }
-    const v1Url = `https://api.opensea.io/api/v1/collection/${encodeURIComponent(slug)}/stats`;
-    const v1Resp = await fetch(v1Url, { headers: { "X-API-KEY": apiKey } });
-    const v1Ok = v1Resp.ok;
-    const v1 = v1Ok ? await v1Resp.json() : {};
+    // 1) v2: metadata
+    const v2Resp = await fetch(`https://api.opensea.io/api/v2/collections/${encodeURIComponent(slug)}`, { headers: h });
+    const v2OK = v2Resp.ok;
+    const v2 = v2OK ? await v2Resp.json() : {};
 
-    // prefer v2 if present, else fallback to v1.stats
-    const floor_price = v2?.stats?.floor_price ?? v1?.stats?.floor_price ?? null;
-    const total_supply = v2?.stats?.total_supply ?? v1?.stats?.total_supply ?? null;
-    const num_owners   = v2?.stats?.num_owners   ?? v1?.stats?.num_owners   ?? null;
+    // 2) v1: full collection (often includes stats)
+    const v1FullResp = await fetch(`https://api.opensea.io/api/v1/collection/${encodeURIComponent(slug)}`, { headers: h });
+    const v1FullOK = v1FullResp.ok;
+    const v1Full = v1FullOK ? await v1FullResp.json() : {};
 
-    const payload = {
-      name: v2?.name ?? null,
-      slug,
-      image_url: v2?.image_url ?? null,
-      description: v2?.description ?? null,
-      floor_price,
-      total_supply,
-      num_owners
+    // 3) v1: stats-only
+    const v1StatsResp = await fetch(`https://api.opensea.io/api/v1/collection/${encodeURIComponent(slug)}/stats`, { headers: h });
+    const v1StatsOK = v1StatsResp.ok;
+    const v1Stats = v1StatsOK ? await v1StatsResp.json() : {};
+
+    // Prefer v2 metadata, then v1 full
+    const meta = {
+      name: v2?.name ?? v1Full?.collection?.name ?? null,
+      image_url: v2?.image_url ?? v1Full?.collection?.image_url ?? null,
+      description: v2?.description ?? v1Full?.collection?.description ?? null
     };
 
-    // If both calls failed, bubble an error for easier debugging
-    if (!v2Ok && !v1Ok) {
+    // Merge stats from best source available
+    const s2 = v2?.stats || {};
+    const s1full = v1Full?.collection?.stats || {};
+    const s1 = v1Stats?.stats || {};
+
+    const floor_price = s2.floor_price ?? s1full.floor_price ?? s1.floor_price ?? null;
+    const total_supply = s2.total_supply ?? s1full.total_supply ?? s1.total_supply ?? null;
+    const num_owners   = s2.num_owners   ?? s1full.num_owners   ?? s1.num_owners   ?? null;
+
+    // If all calls failed, surface status codes for debugging
+    if (!v2OK && !v1FullOK && !v1StatsOK) {
       return {
         statusCode: 502,
         headers: HEADERS,
-        body: JSON.stringify({ error: "OpenSea calls failed", detail: { v2Status: v2Resp.status, v1Status: v1Resp.status } })
+        body: JSON.stringify({
+          error: "OpenSea calls failed",
+          detail: { v2Status: v2Resp.status, v1FullStatus: v1FullResp.status, v1StatsStatus: v1StatsResp.status }
+        })
       };
     }
 
-    return { statusCode: 200, headers: HEADERS, body: JSON.stringify(payload) };
-  } catch (err) {
-    return { statusCode: 500, headers: HEADERS, body: JSON.stringify({ error: "Server error", detail: String(err) }) };
+    return {
+      statusCode: 200,
+      headers: HEADERS,
+      body: JSON.stringify({ slug, ...meta, floor_price, total_supply, num_owners })
+    };
+  } catch (e) {
+    return { statusCode: 500, headers: HEADERS, body: JSON.stringify({ error: "Server error", detail: String(e) }) };
   }
 };
