@@ -8,7 +8,7 @@
  */
 const VERSION = "alchemy-fallback-1";
 const hasAlchemy = !!process.env.ALCHEMY_API_KEY;
- 
+
 const HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
@@ -161,6 +161,40 @@ exports.handler = async (event) => {
       }
     }
 
+    // ---- Final RPC fallback: call totalSupply() via Alchemy JSON-RPC ----
+    let alchemyRPCStatus = null;
+    if (total_supply == null && chain === "eth" && ALCHEMY) {
+      const rpcUrl = `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY}`;
+      try {
+        const rpcRes = await fetch(rpcUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: 1,
+            method: "eth_call",
+            params: [
+              { to: addr, data: "0x18160ddd" }, // totalSupply() selector
+              "latest"
+            ]
+          })
+        });
+        alchemyRPCStatus = rpcRes.status;
+        if (rpcRes.ok) {
+          const rj = await rpcRes.json();
+          const hex = rj?.result || null; // e.g., "0x1388"
+          if (hex && hex !== "0x") {
+            try {
+              const n = Number(BigInt(hex));
+              if (Number.isFinite(n)) total_supply = n;
+            } catch { /* ignore parse errors */ }
+          }
+        }
+      } catch {
+        alchemyRPCStatus = "error";
+      }
+    }
+
     const body = {
       slug: slug || null,
       address: addr,
@@ -171,21 +205,27 @@ exports.handler = async (event) => {
 
     if (debug) {
       body.debug = {
-		  version: VERSION,
-          hasAlchemy,	
+        version: VERSION,
+        hasAlchemy,
         statuses: {
           osV2Meta: osV2Status,
           moralisStats: statsStatus,
           moralisMeta: metaStatus,
           moralisFloor: nofloor ? "skipped" : moralisFloorStatus,
           osV1Stats: osV1Status,
-          alchemyMeta: alchemyStatus
+          alchemyMeta: alchemyStatus,
+          alchemyRPC: alchemyRPCStatus
         },
         endpoints: {
           statsUrl, metaUrl,
           floorUrl: nofloor ? null : `${mBase}/nft/${addr}/floor-price?chain=${encodeURIComponent(chain)}&marketplace=opensea`,
           osV1StatsUrl: slug ? `https://api.opensea.io/api/v1/collection/${slug}/stats` : null,
-          alchemyUrl: (chain === "eth" && ALCHEMY) ? `https://eth-mainnet.g.alchemy.com/nft/v2/[KEY]/getContractMetadata?contractAddress=${addr}` : null
+          alchemyUrl: (chain === "eth" && ALCHEMY)
+            ? `https://eth-mainnet.g.alchemy.com/nft/v2/[KEY]/getContractMetadata?contractAddress=${addr}`
+            : null,
+          alchemyRpcUrl: (chain === "eth" && ALCHEMY)
+            ? `https://eth-mainnet.g.alchemy.com/v2/[KEY]`
+            : null
         },
         toggles: { nofloor, nometa }
       };
