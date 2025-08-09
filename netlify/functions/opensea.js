@@ -230,6 +230,28 @@ exports.handler = async (event) => {
         toggles: { nofloor, nometa }
       };
     }
+	
+	// Final safety net: manual overrides via env JSON (address -> supply)
+	try {
+	  const raw = process.env.SUPPLY_OVERRIDES_JSON || "";
+	  if (raw) {
+		const map = JSON.parse(raw);
+		if (total_supply == null && addr && map && typeof map === "object") {
+		  const ov = map[addr];
+		  if (ov != null) {
+			const n = Number(ov);
+			if (Number.isFinite(n)) {
+			  total_supply = n;
+			  if (debug) {
+				body.debug = body.debug || {};
+				body.debug.statuses = body.debug.statuses || {};
+				body.debug.statuses.manualSupplyOverride = true;
+			  }
+			}
+		  }
+		}
+	  }
+	} catch (_) { /* ignore bad JSON */ }
 
     return { statusCode: 200, headers: HEADERS, body: JSON.stringify(body) };
   } catch (e) {
