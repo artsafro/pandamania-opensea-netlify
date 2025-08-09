@@ -1,6 +1,6 @@
 /**
  * GET /.netlify/functions/opensea?slug=<slug>&addr=<contract>&chain=eth[&debug=1]
- * Env: MORALIS_API_KEY (required), OPENSEA_API_KEY (optional for metadata)
+ * Env: MORALIS_API_KEY (required), OPENSEA_API_KEY (optional)
  */
 const HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -20,7 +20,8 @@ function toNumberish(v) {
     return Number.isFinite(n) ? n : null;
   }
   if (typeof v === "object") {
-    const cand = v.current ?? v.value ?? v.count ?? v.total ?? v.amount;
+    // Try common properties for “current/total/value/count/amount”
+    const cand = v.current ?? v.total ?? v.value ?? v.count ?? v.amount ?? v.supply ?? v.items;
     return cand != null ? toNumberish(cand) : null;
   }
   return null;
@@ -41,12 +42,8 @@ exports.handler = async (event) => {
     const moralisKey = process.env.MORALIS_API_KEY || "";
     const openseaKey = process.env.OPENSEA_API_KEY || "";
 
-    if (!addr) {
-      return { statusCode: 400, headers: HEADERS, body: JSON.stringify({ error: "Missing ?addr=<contract-address>" }) };
-    }
-    if (!moralisKey) {
-      return { statusCode: 500, headers: HEADERS, body: JSON.stringify({ error: "Missing MORALIS_API_KEY env var" }) };
-    }
+    if (!addr) return { statusCode: 400, headers: HEADERS, body: JSON.stringify({ error: "Missing ?addr=<contract-address>" }) };
+    if (!moralisKey) return { statusCode: 500, headers: HEADERS, body: JSON.stringify({ error: "Missing MORALIS_API_KEY env var" }) };
 
     // Optional metadata from OpenSea
     let name = null, image_url = null, description = null, osStatus = null;
@@ -69,47 +66,38 @@ exports.handler = async (event) => {
     const statsUrl = `${base}/nft/${addr}/stats?chain=${encodeURIComponent(chain)}`;
     const floorUrl = `${base}/nft/${addr}/floor-price?chain=${encodeURIComponent(chain)}&marketplace=opensea`;
 
+    // --- Stats
     const statsResp = await fetch(statsUrl, { headers: mh });
     const statsStatus = statsResp.status;
     const statsJson = statsResp.ok ? await statsResp.json() : null;
 
-    // Normalize owners & supply from multiple possible shapes
+    // Owners (works now)
     const ownersRaw =
-      statsJson?.num_owners ??
-      statsJson?.owners ??
-      statsJson?.owner_count ??
-      statsJson?.ownerCount ??
-      statsJson?.ownersCount ??
-      null;
-
-    const supplyRaw =
-      statsJson?.total_supply ??
-      statsJson?.token_count ??
-      statsJson?.tokenCount ??
-      statsJson?.supply ??
-      statsJson?.tokens ??
-      null;
-
+      statsJson?.num_owners ?? statsJson?.owners ?? statsJson?.owner_count ??
+      statsJson?.ownerCount ?? statsJson?.ownersCount ?? null;
     const num_owners = toNumberish(ownersRaw);
+
+    // Supply: unwrap object/string/number
+    const supplyRaw =
+      statsJson?.total_supply ?? statsJson?.token_count ?? statsJson?.tokenCount ??
+      statsJson?.supply ?? statsJson?.tokens ?? statsJson?.total ?? null;
     const total_supply = toNumberish(supplyRaw);
 
-    // Floor with one retry on 202
-    let floorResp = await fetch(floorUrl, { headers: mh });
-    let floorStatus = floorResp.status;
-    if (floorStatus === 202) {
-      await sleep(1200);
-      floorResp = await fetch(floorUrl, { headers: mh });
-      floorStatus = floorResp.status;
-    }
-    const floorJson = floorResp.ok ? await floorResp.json() : null;
-
-    let floor_price = null;
-    if (floorJson) {
-      floor_price =
-        toNumberish(floorJson.floor_price) ??
-        toNumberish(floorJson?.nativePrice?.value) ??
-        toNumberish(floorJson?.price?.amount?.decimal) ??
-        null;
+    // --- Floor with up to 3 retries on 202
+    let floor_price = null, floorStatus = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const resp = await fetch(floorUrl, { headers: mh });
+      floorStatus = resp.status;
+      if (resp.ok) {
+        const floorJson = await resp.json();
+        floor_price =
+          toNumberish(floorJson.floor_price) ??
+          toNumberish(floorJson?.nativePrice?.value) ??
+          toNumberish(floorJson?.price?.amount?.decimal) ?? null;
+        break;
+      }
+      if (floorStatus !== 202) break;        // only retry 202
+      await sleep(600 * (attempt + 1));      // 600ms, 1200ms
     }
 
     const body = {
@@ -124,7 +112,7 @@ exports.handler = async (event) => {
       body.debug = {
         statuses: { opensea: osStatus, moralisStats: statsStatus, moralisFloor: floorStatus },
         endpoints: { statsUrl, floorUrl },
-        rawShapes: {
+        rawTypes: {
           ownersType: typeof ownersRaw,
           supplyType: typeof supplyRaw
         }
