@@ -1,9 +1,6 @@
 /**
- * GET /.netlify/functions/opensea?slug=<collection-slug>&addr=<contract-address>&chain=eth[&debug=1]
- *
- * Env vars:
- *  - MORALIS_API_KEY (required)  // NEVER hardcode keys
- *  - OPENSEA_API_KEY (optional)  // for nicer metadata by slug
+ * GET /.netlify/functions/opensea?slug=<slug>&addr=<contract>&chain=eth[&debug=1]
+ * Env: MORALIS_API_KEY (required), OPENSEA_API_KEY (optional for metadata)
  */
 const HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -12,6 +9,22 @@ const HEADERS = {
   "Content-Type": "application/json",
   "Cache-Control": "no-store"
 };
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+function toNumberish(v) {
+  if (v == null) return null;
+  if (typeof v === "number") return v;
+  if (typeof v === "string") {
+    const n = Number(v.replace?.(/,/g, "") ?? v);
+    return Number.isFinite(n) ? n : null;
+  }
+  if (typeof v === "object") {
+    const cand = v.current ?? v.value ?? v.count ?? v.total ?? v.amount;
+    return cand != null ? toNumberish(cand) : null;
+  }
+  return null;
+}
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") {
@@ -35,7 +48,7 @@ exports.handler = async (event) => {
       return { statusCode: 500, headers: HEADERS, body: JSON.stringify({ error: "Missing MORALIS_API_KEY env var" }) };
     }
 
-    // --- Optional: OpenSea metadata by slug
+    // Optional metadata from OpenSea
     let name = null, image_url = null, description = null, osStatus = null;
     if (slug && openseaKey) {
       const osUrl = `https://api.opensea.io/api/v2/collections/${encodeURIComponent(slug)}`;
@@ -49,36 +62,54 @@ exports.handler = async (event) => {
       }
     }
 
-    // --- Moralis stats (owners, supply) & floor
+    // Moralis endpoints
     const base = "https://deep-index.moralis.io/api/v2.2";
     const mh = { "X-API-Key": moralisKey };
 
     const statsUrl = `${base}/nft/${addr}/stats?chain=${encodeURIComponent(chain)}`;
     const floorUrl = `${base}/nft/${addr}/floor-price?chain=${encodeURIComponent(chain)}&marketplace=opensea`;
 
-    const [statsResp, floorResp] = await Promise.all([
-      fetch(statsUrl, { headers: mh }),
-      fetch(floorUrl, { headers: mh }),
-    ]);
-
+    const statsResp = await fetch(statsUrl, { headers: mh });
     const statsStatus = statsResp.status;
-    const floorStatus = floorResp.status;
-
     const statsJson = statsResp.ok ? await statsResp.json() : null;
+
+    // Normalize owners & supply from multiple possible shapes
+    const ownersRaw =
+      statsJson?.num_owners ??
+      statsJson?.owners ??
+      statsJson?.owner_count ??
+      statsJson?.ownerCount ??
+      statsJson?.ownersCount ??
+      null;
+
+    const supplyRaw =
+      statsJson?.total_supply ??
+      statsJson?.token_count ??
+      statsJson?.tokenCount ??
+      statsJson?.supply ??
+      statsJson?.tokens ??
+      null;
+
+    const num_owners = toNumberish(ownersRaw);
+    const total_supply = toNumberish(supplyRaw);
+
+    // Floor with one retry on 202
+    let floorResp = await fetch(floorUrl, { headers: mh });
+    let floorStatus = floorResp.status;
+    if (floorStatus === 202) {
+      await sleep(1200);
+      floorResp = await fetch(floorUrl, { headers: mh });
+      floorStatus = floorResp.status;
+    }
     const floorJson = floorResp.ok ? await floorResp.json() : null;
-
-    const num_owners =
-      statsJson?.num_owners ?? statsJson?.owners ?? statsJson?.owner_count ?? statsJson?.ownerCount ?? null;
-
-    const total_supply =
-      statsJson?.total_supply ?? statsJson?.token_count ?? statsJson?.tokenCount ?? null;
 
     let floor_price = null;
     if (floorJson) {
       floor_price =
-        (typeof floorJson.floor_price === "string" ? parseFloat(floorJson.floor_price) : floorJson.floor_price) ??
-        floorJson?.nativePrice?.value ??
-        floorJson?.price?.amount?.decimal ?? null;
+        toNumberish(floorJson.floor_price) ??
+        toNumberish(floorJson?.nativePrice?.value) ??
+        toNumberish(floorJson?.price?.amount?.decimal) ??
+        null;
     }
 
     const body = {
@@ -92,7 +123,11 @@ exports.handler = async (event) => {
     if (debug) {
       body.debug = {
         statuses: { opensea: osStatus, moralisStats: statsStatus, moralisFloor: floorStatus },
-        endpoints: { statsUrl, floorUrl }
+        endpoints: { statsUrl, floorUrl },
+        rawShapes: {
+          ownersType: typeof ownersRaw,
+          supplyType: typeof supplyRaw
+        }
       };
     }
 
