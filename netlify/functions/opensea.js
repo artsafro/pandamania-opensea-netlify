@@ -252,6 +252,8 @@ exports.handler = async (event) => {
 		}
 	  }
 	} catch (_) { /* ignore bad JSON */ }
+	
+	body.total_supply = total_supply;
 
     return { statusCode: 200, headers: HEADERS, body: JSON.stringify(body) };
   } catch (e) {
