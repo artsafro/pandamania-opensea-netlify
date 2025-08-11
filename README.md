@@ -43,8 +43,8 @@ Your assets remain **completely safe**, and usage is **anonymous**.
 
 * `netlify.toml` – Netlify build & function settings
 * `netlify/functions/opensea.js` – Main serverless function fetching stats
-* `pm-fetch.js` – Front-end helper to call the function & render results  (**For WordPress users, store this file in** `/wp-content/themes/bb-theme/js`)
-* `pandamania-blocks.css` – Minimal CSS styling for cards or dashboards  (**For WordPress users, store this file in** `/wp-content/themes/bb-theme/css`)
+* `pm-fetch.js` – Front-end helper to call the function & render results  (**For WordPress users, store this file in** `/wp-content/themes/your-theme/js`)
+* `pandamania-blocks.css` – Minimal CSS styling for cards or dashboards  (**For WordPress users, store this file in** `/wp-content/themes/your-theme/css`)
 
 ---
 
