@@ -33,12 +33,18 @@ Your assets remain **completely safe**, and usage is **anonymous**.
 
 ---
 
+## 📊 Live Example
+
+[![](Images/demo-link.png)](https://YOUR_NETLIFY_SITE.netlify.app/)
+
+---
+
 ## 📦 Files Included
 
 * `netlify.toml` – Netlify build & function settings
 * `netlify/functions/opensea.js` – Main serverless function fetching stats
-* `pm-fetch.js` – Front-end helper to call the function & render results
-* `pandamania-blocks.css` – Minimal CSS styling for cards or dashboards
+* `pm-fetch.js` – Front-end helper to call the function & render results  (**For WordPress users, store this file in** `/wp-content/themes/bb-theme/js`)
+* `pandamania-blocks.css` – Minimal CSS styling for cards or dashboards  (**For WordPress users, store this file in** `/wp-content/themes/bb-theme/css`)
 
 ---
 
@@ -144,7 +150,7 @@ collections.forEach(c => {
 * ⏱ Rate-limit refreshes — For example, refresh once every 12–24 hours for stable collections.
 * 📦 Use caching — Serve fetched data from `localStorage`, Netlify build cache, or your own API instead of live calls on every page load.
 * 🎯 Limit collections — Only load stats for collections relevant to the page.
-* 🚫 Disable debug mode (`debug=1`) in production — Debug requests add extra API calls.
+* 🛑 Disable debug mode (`debug=1`) in production — Debug requests add extra API calls.
 * 📝 Use `SUPPLY_OVERRIDES_JSON` — Avoids extra RPC calls for missing total supply.
 
 ---
@@ -172,4 +178,3 @@ Panda love and blockchain vibes 🐼💖
 ## 📥 Contributions
 
 Feel free to fork, customize, and use it in your own NFT projects. Pull requests welcome!
-
