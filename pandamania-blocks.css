@@ -1,0 +1,7 @@
+/* PandaMania blocks — dark neon style */
+.pm-card{background:#0f1513;color:#e9ffee;border-radius:16px;padding:14px 16px 12px;
+  box-shadow:0 0 24px rgba(57,255,158,.12), inset 0 0 0 1px rgba(57,255,158,.15)}
+.pm-name{font-weight:650;color:#b6fbd7;margin:0 0 6px;text-shadow:0 0 6px rgba(57,255,158,.35)}
+.pm-line{margin:6px 0;font-weight:560}
+.pm-err{color:#ffb6b6}
+.pm-muted{opacity:.85}
