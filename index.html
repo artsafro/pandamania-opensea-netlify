@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFT Stats Fetcher - Live Demo</title>
+    <link rel="stylesheet" href="pandamania-blocks.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            color: #39ff9e;
+            text-shadow: 0 0 10px rgba(57,255,158,0.5);
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: #b6fbd7;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .info-box {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .info-box h3 {
+            color: #39ff9e;
+            margin-top: 0;
+        }
+        .demo-section {
+            background: linear-gradient(135deg, #1a1a1a 0%, #0f1513 100%);
+            border: 1px solid #39ff9e;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+        .demo-title {
+            text-align: center;
+            color: #39ff9e;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+        .api-info {
+            background: #2a2a2a;
+            border-left: 4px solid #39ff9e;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .endpoint {
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .feature-item {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        .feature-item h4 {
+            color: #39ff9e;
+            margin: 0 0 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐼 NFT Stats Fetcher</h1>
+            <p>Live NFT Collection Statistics API</p>
+            <p><strong>Site:</strong> <a href="https://visionary-pegasus-4ccd32.netlify.app" style="color: #39ff9e;">visionary-pegasus-4ccd32.netlify.app</a></p>
+        </div>
+
+        <div class="demo-section">
+            <div class="demo-title">🎯 Live NFT Collection Stats</div>
+            <div class="stats-grid">
+                <div id="pandamania-card" class="pm-card">
+                    <div class="pm-name">PandaMania NFT Collection</div>
+                    <div class="pm-line">Loading live stats...</div>
+                </div>
+
+                <div id="redpanda-card" class="pm-card">
+                    <div class="pm-name">Red Panda Pals</div>
+                    <div class="pm-line">Loading live stats...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>🌐 API Endpoint</h3>
+            <div class="endpoint">https://visionary-pegasus-4ccd32.netlify.app/.netlify/functions/opensea</div>
+            
+            <div class="api-info">
+                <strong>Parameters:</strong>
+                <ul>
+                    <li><code>slug</code> - OpenSea collection slug (required)</li>
+                    <li><code>addr</code> - Contract address (required)</li>
+                    <li><code>chain</code> - Blockchain (default: eth)</li>
+                    <li><code>debug</code> - Debug info (optional: 1)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>🚀 Features</h3>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <h4>📊 Multi-API Support</h4>
+                    <p>Moralis, OpenSea, and Alchemy APIs with automatic fallbacks</p>
+                </div>
+                <div class="feature-item">
+                    <h4>🔗 CORS Ready</h4>
+                    <p>Works on any website with cross-origin requests</p>
+                </div>
+                <div class="feature-item">
+                    <h4>⚡ Real-time Data</h4>
+                    <p>Live NFT collection statistics and floor prices</p>
+                </div>
+                <div class="feature-item">
+                    <h4>🎨 Easy Integration</h4>
+                    <p>Simple JavaScript library for quick implementation</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>📝 Usage Example</h3>
+            <div class="endpoint">
+&lt;link rel="stylesheet" href="https://visionary-pegasus-4ccd32.netlify.app/pandamania-blocks.css"&gt;
+&lt;script src="https://visionary-pegasus-4ccd32.netlify.app/pm-fetch.js"&gt;&lt;/script&gt;
+
+&lt;div id="my-nft-card" class="pm-card"&gt;
+  &lt;div class="pm-name"&gt;My NFT Collection&lt;/div&gt;
+  &lt;div class="pm-line"&gt;Loading…&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+pmFetchStats("my-nft-card", "collection-slug", "0x123...");
+&lt;/script&gt;
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>🧪 Test URLs</h3>
+            <p><strong>Basic Test:</strong></p>
+            <div class="endpoint">https://visionary-pegasus-4ccd32.netlify.app/.netlify/functions/opensea?slug=pandamanianftcollection&addr=0x29be0951309805ddcfa90592c3bf765925871344</div>
+            
+            <p><strong>Debug Test:</strong></p>
+            <div class="endpoint">https://visionary-pegasus-4ccd32.netlify.app/.netlify/functions/opensea?slug=pandamanianftcollection&addr=0x29be0951309805ddcfa90592c3bf765925871344&debug=1</div>
+        </div>
+
+        <div class="info-box">
+            <h3>🔧 Built With</h3>
+            <ul>
+                <li><strong>Moralis API</strong> - Primary NFT data source</li>
+                <li><strong>OpenSea API</strong> - Collection metadata and fallback</li>
+                <li><strong>Netlify Functions</strong> - Serverless deployment</li>
+                <li><strong>Vanilla JavaScript</strong> - No framework dependencies</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="pm-fetch.js"></script>
+    <script>
+        // Load NFT stats on page load
+        window.onload = function() {
+            // Load PandaMania stats
+            pmFetchStats("pandamania-card", "pandamanianftcollection", "0x29be0951309805ddcfa90592c3bf765925871344");
+            
+            // Load Red Panda Pals stats
+            pmFetchStats("redpanda-card", "redpandapals", "0x870b1fa5d36696af7b3cfa0e2721872efd790b51");
+        };
+    </script>
+</body>
+</html>
