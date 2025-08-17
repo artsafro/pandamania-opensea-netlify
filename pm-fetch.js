@@ -1,5 +1,5 @@
 // Point to YOUR Netlify function — full URL, not relative
-const PM_ENDPOINT = "https://nft-stats-fetcher.netlify.app/.netlify/functions/opensea";
+const PM_ENDPOINT = "https://visionary-pegasus-4ccd32.netlify.app/.netlify/functions/opensea";
 
 // Simple formatters
 const fmtNum = (v) => (v == null || isNaN(Number(v)) ? "—" : Number(v).toLocaleString());
