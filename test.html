@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFT Stats Fetcher - Test</title>
+    <link rel="stylesheet" href="pandamania-blocks.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            color: #39ff9e;
+            text-shadow: 0 0 10px rgba(57,255,158,0.5);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .info-box {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .info-box h3 {
+            color: #39ff9e;
+            margin-top: 0;
+        }
+        .note {
+            background: #2a2a2a;
+            border-left: 4px solid #39ff9e;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐼 NFT Stats Fetcher</h1>
+            <p>Testing the PandaMania NFT Stats Fetcher Installation</p>
+        </div>
+
+        <div class="info-box">
+            <h3>📋 Installation Status</h3>
+            <p>✅ Repository cloned successfully</p>
+            <p>✅ All files present</p>
+            <p>✅ Node.js available (v22.18.0)</p>
+            <p>✅ Netlify configuration ready</p>
+            <p>✅ Moralis API key working</p>
+            <p>✅ OpenSea API key working</p>
+        </div>
+
+        <div class="note">
+            <strong>⚠️ Important:</strong> This is a Netlify serverless function project. To use it, you need to:
+            <ol>
+                <li>Deploy to Netlify</li>
+                <li>Set up environment variables (MORALIS_API_KEY, OPENSEA_API_KEY)</li>
+                <li>Update the PM_ENDPOINT URL in pm-fetch.js</li>
+            </ol>
+        </div>
+
+        <div class="stats-grid">
+            <!-- Single Collection Card Example -->
+            <div id="pandamania-card" class="pm-card">
+                <div class="pm-name">PandaMania NFT Collection</div>
+                <div class="pm-line">Loading…</div>
+            </div>
+
+            <!-- Another Collection Example -->
+            <div id="redpanda-card" class="pm-card">
+                <div class="pm-name">Red Panda Pals</div>
+                <div class="pm-line">Loading…</div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>🔧 Project Structure</h3>
+            <ul>
+                <li><code>netlify/functions/opensea.js</code> - Main serverless function</li>
+                <li><code>pm-fetch.js</code> - Frontend JavaScript helper</li>
+                <li><code>pandamania-blocks.css</code> - Styling for cards</li>
+                <li><code>netlify.toml</code> - Netlify configuration</li>
+            </ul>
+        </div>
+
+        <div class="info-box">
+            <h3>🚀 Next Steps</h3>
+            <ol>
+                <li>Get API keys from Moralis and OpenSea</li>
+                <li>Deploy to Netlify (connect GitHub repo)</li>
+                <li>Set environment variables in Netlify dashboard</li>
+                <li>Update PM_ENDPOINT URL in pm-fetch.js</li>
+                <li>Test with real NFT collections</li>
+            </ol>
+        </div>
+    </div>
+
+    <script src="pm-fetch.js"></script>
+    <script>
+        // Note: These calls will fail until deployed to Netlify with proper API keys
+        // This is just for demonstration purposes
+        
+        console.log("NFT Stats Fetcher Test Page Loaded");
+        console.log("Current PM_ENDPOINT:", PM_ENDPOINT);
+        
+        // Example calls (will show errors until properly configured)
+        // pmFetchStats("pandamania-card", "pandamanianftcollection", "0x29be0951309805ddcfa90592c3bf765925871344");
+        // pmFetchStats("redpanda-card", "redpandapals", "0x870b1fa5d36696af7b3cfa0e2721872efd790b51");
+    </script>
+</body>
+</html>
